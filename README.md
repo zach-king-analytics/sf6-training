@@ -6,7 +6,40 @@ A metric-driven skill development system for Street Fighter 6.
 
 ---
 
-## Philosophy
+## Table of Contents
+
+1. [Philosophy](#1-philosophy)
+2. [Quick Start](#2-quick-start)
+3. [Directory Structure](#3-directory-structure)
+4. [Session Protocol](#4-session-protocol)
+   - [Pre-Session Intent](#41-pre-session-intent)
+   - [Per-Match Loss Entry](#42-per-match-loss-entry)
+   - [Session Close — Hard Gate](#43-session-close--hard-gate)
+   - [Weekly Review](#44-weekly-review)
+5. [Loss Classification System](#5-loss-classification-system)
+   - [Categories](#51-categories)
+   - [Subcategories](#52-subcategories)
+6. [Concept Library](#6-concept-library)
+   - [Fundamentals](#61-fundamentals)
+   - [Ryu-Specific](#62-ryu-specific)
+7. [Drill Library](#7-drill-library)
+   - [Mastery Stages](#71-mastery-stages)
+   - [Combo Drills](#72-combo-drills)
+   - [Defense Drills](#73-defense-drills)
+   - [Neutral Drills](#74-neutral-drills)
+   - [Lab Log](#75-lab-log)
+8. [Matchup Notes](#8-matchup-notes)
+9. [Python Tooling](#9-python-tooling)
+   - [session_close.py](#91-session_closepy--hard-gate)
+   - [parse_sessions.py](#92-parse_sessionspy)
+   - [drill_tracker.py](#93-drill_trackerpy)
+   - [training_report.py](#94-training_reportpy)
+10. [Metrics Reference](#10-metrics-reference)
+11. [Build Phases](#11-build-phases)
+
+---
+
+## 1. Philosophy
 
 Stop autopiloting ranked. Every loss is a data point. This system turns those data points into a compounding knowledge base.
 
@@ -16,11 +49,13 @@ The core loop:
 Play (with intent) → Loss → Replay Review → Lab → Measure → Repeat
 ```
 
-The **hard gate**: you cannot close a session until every ranked loss has been watched and categorized. No exceptions.
+The **hard gate**: you cannot close a session until every ranked loss has been watched and categorized. No exceptions. This is enforced by `tools/session_close.py`, which exits non-zero if any loss entry is missing a review confirmation, a valid category, or an actionable takeaway.
+
+The goal is not grinding reps blindly. It is deliberate accumulation: every session adds to the concept library, every loss either triggers a drill or updates a matchup note, and every week surfaces the patterns most responsible for stalled MR.
 
 ---
 
-## Quick Start
+## 2. Quick Start
 
 ### Setup
 
@@ -28,21 +63,28 @@ The **hard gate**: you cannot close a session until every ranked loss has been w
 git clone https://github.com/zach-king-analytics/sf6-training.git
 cd sf6-training
 python -m venv .venv
-.venv\Scripts\activate       # Windows
-# source .venv/bin/activate  # macOS/Linux
+.venv\Scripts\activate        # Windows
+# source .venv/bin/activate   # macOS/Linux
 pip install -r requirements.txt
 cp .env.example .env
-# Edit .env with your DATABASE_URL
+# Edit .env with your DATABASE_URL and PLAYER_CFN
 ```
 
 ### Starting a session
 
 ```bash
-# Create today's session file (adjust path for current date)
-mkdir -p sessions/2026/04
-cp protocol/session-template.md sessions/2026/04/2026-04-04.md
-# Set your focus and MR in the frontmatter, then queue
+# Windows
+$today = Get-Date -Format "yyyy-MM-dd"
+$dir   = "sessions/$(Get-Date -Format 'yyyy/MM')"
+New-Item -ItemType Directory -Force -Path $dir | Out-Null
+Copy-Item protocol/session-template.md "$dir/$today.md"
+
+# macOS/Linux
+today=$(date +%F); dir="sessions/$(date +%Y/%m)"
+mkdir -p $dir && cp protocol/session-template.md $dir/$today.md
 ```
+
+Open the new file, fill in frontmatter (`focus`, `start_mr`), then queue.
 
 ### Closing a session (hard gate)
 
@@ -50,34 +92,48 @@ cp protocol/session-template.md sessions/2026/04/2026-04-04.md
 python tools/session_close.py --file sessions/2026/04/2026-04-04.md
 ```
 
-If any ranked loss is unreviewed or missing a category, this exits with an error. Fix it, then re-run.
+Exits 0 on pass, exits 1 with specific error messages if any loss is incomplete. Fix the flagged entries and re-run.
 
 ### Weekly review (Sundays)
 
 ```bash
-# Scaffold the week file (adjust week number)
+# Scaffold the week file
 cp protocol/weekly-review-template.md weekly-reviews/2026-W15.md
 
-# Generate metrics
-python tools/parse_sessions.py              # sessions/ -> sessions-summary.json
-python tools/drill_tracker.py               # lab-log.md -> drill-mastery.json
-python tools/training_report.py             # + Supabase -> training-report.json
+# Generate artifacts
+python tools/parse_sessions.py     # sessions/**/*.md  ->  artifacts/sessions-summary.json
+python tools/drill_tracker.py      # drills/lab-log.md ->  artifacts/drill-mastery.json
+python tools/training_report.py    # Supabase + above  ->  artifacts/training-report.json
 ```
+
+All three artifacts land in `artifacts/` (gitignored). Commit the weekly review markdown when complete.
 
 ---
 
-## Directory Structure
+## 3. Directory Structure
 
 ```
 sf6-training/
+├── .env.example                       # environment variable template
+├── .gitignore
+├── README.md                          # this file (canonical spec)
+├── requirements.txt
+│
 ├── protocol/
-│   ├── loss-analysis.md          # The full protocol explained
-│   ├── session-template.md       # Copy this to start each session
-│   └── weekly-review-template.md # Copy this every Sunday
-├── sessions/                     # YYYY/MM/YYYY-MM-DD.md  (one per session)
-├── weekly-reviews/               # YYYY-WXX.md  (one per week)
+│   ├── loss-analysis.md               # full protocol rules + rationale
+│   ├── session-template.md            # copy to start each session
+│   └── weekly-review-template.md      # copy every Sunday
+│
+├── sessions/                          # one .md per session
+│   └── YYYY/
+│       └── MM/
+│           └── YYYY-MM-DD.md
+│
+├── weekly-reviews/                    # one .md per week
+│   └── YYYY-WXX.md
+│
 ├── concepts/
-│   ├── index.md                  # mastery status overview
+│   ├── index.md                       # mastery status table for all concepts
 │   ├── fundamentals/
 │   │   ├── drive-system.md
 │   │   ├── neutral-footsies.md
@@ -87,70 +143,391 @@ sf6-training/
 │       ├── normals-guide.md
 │       ├── punish-combos.md
 │       └── oki-pressure.md
+│
 ├── drills/
-│   ├── index.md                  # drill library + mastery table
-│   ├── lab-log.md                # running log of every lab session
+│   ├── index.md                       # drill library + mastery table
+│   ├── lab-log.md                     # running log of every lab session
 │   ├── combo/
+│   │   ├── light-confirm.md
+│   │   ├── drive-rush-bnb.md
+│   │   └── punish-optimal.md
 │   ├── defense/
+│   │   ├── anti-air-reaction.md
+│   │   ├── dp-bait.md
+│   │   └── parry-timing.md
 │   └── neutral/
+│       └── footsies-spacing.md
+│
 ├── matchup-notes/
-│   ├── index.md
-│   ├── _template.md              # copy when starting a new matchup
-│   └── ryu.md
-└── tools/
-    ├── session_close.py          # hard gate validator
-    ├── parse_sessions.py         # session logs -> sessions-summary.json
-    ├── training_report.py        # Supabase + sessions -> training-report.json
-    └── drill_tracker.py          # lab-log -> drill-mastery.json
+│   ├── index.md                       # all matchups at a glance
+│   ├── _template.md                   # copy when starting a new matchup
+│   └── ryu.md                         # mirror matchup
+│
+├── tools/
+│   ├── session_close.py               # hard gate validator
+│   ├── parse_sessions.py              # session logs -> sessions-summary.json
+│   ├── drill_tracker.py               # lab-log.md -> drill-mastery.json
+│   └── training_report.py             # Supabase + sessions -> training-report.json
+│
+└── artifacts/                         # gitignored build outputs
+    ├── sessions-summary.json
+    ├── drill-mastery.json
+    └── training-report.json
 ```
 
 ---
 
-## Metrics
+## 4. Session Protocol
 
-| Metric | Source | Script |
-|--------|--------|--------|
-| MR trend | Supabase `sf.v_match_player_norm` | `training_report.py` |
-| Win rate per matchup | Supabase | `training_report.py` |
-| Review compliance rate | Session logs | `parse_sessions.py` |
-| Loss category breakdown | Session logs | `parse_sessions.py` |
-| Matchup knowledge gap density | Session + Supabase | `training_report.py` |
-| Drill mastery timeline | `drills/lab-log.md` | `drill_tracker.py` |
+### 4.1 Pre-Session Intent
+
+Before queuing, fill in the session frontmatter:
+
+```yaml
+---
+date: 2026-04-05
+player_cfn: braventooth
+character: ryu
+session_type: ranked         # ranked | lab | both
+start_mr: 1362
+end_mr: null                 # fill at close
+focus: anti-air consistency  # 1-3 word focus for the session
+energy_pre: medium           # low | medium | high
+---
+```
+
+Then write your intent in prose under `## Intent`:
+- Primary focus
+- Secondary focus
+- One thing to actively avoid autopiloting
+
+This commit binds you to a game plan before the first match.
+
+### 4.2 Per-Match Loss Entry
+
+After every ranked loss, **before re-queuing**, fill in a loss block:
+
+```markdown
+### Loss 01
+
+- opponent_cfn: <cfn>
+- opponent_character: <character>
+- rounds: 1-2
+- replay_watched: true
+- loss_category: knowledge_gap
+- loss_subcategory: neutral
+
+#### What beat me
+
+- Describe the specific tool, spacing trap, or sequence that decided the match.
+
+#### Execution gap (if any)
+
+- Describe what you recognized but failed to convert.
+
+#### Actionable takeaway
+
+- drill: <drill-id>
+- concept: <concept-file>
+- matchup_note: <character>
+
+#### Replay timestamp notes
+
+- Round X, Xs: <observation>
+```
+
+`replay_watched: true` is the minimum requirement for the gate to pass. Everything else builds the database.
+
+### 4.3 Session Close — Hard Gate
+
+Run before ending the session:
+
+```bash
+python tools/session_close.py --file sessions/YYYY/MM/YYYY-MM-DD.md
+```
+
+The script validates every `### Loss NN` block in the file and enforces:
+
+| Check | Rule |
+|-------|------|
+| `replay_watched` | Must be `true` |
+| `loss_category` | Must be one of the four valid categories |
+| `loss_subcategory` | Must be one of the six valid subcategories |
+| Actionable takeaway | At least one of `drill`, `concept`, or `matchup_note` must be non-empty |
+
+On failure it prints the specific violations and exits 1. Fix each one and re-run. On pass it prints a summary and exits 0.
+
+Fill in the `## Session Close` section after the gate passes:
+
+```markdown
+## Session Close
+
+- energy_post: medium
+- mental_state: neutral
+- end_mr: 1368
+- notes: <anything worth carrying forward>
+```
+
+### 4.4 Weekly Review
+
+Every Sunday, scaffold this week's review file and fill it in after running the three pipeline scripts:
+
+```bash
+python tools/parse_sessions.py
+python tools/drill_tracker.py
+python tools/training_report.py
+```
+
+Key fields:
+- MR delta for the week
+- Win/loss record
+- Most common loss category
+- Most common loss subcategory
+- Drill progress
+- Next week's single primary focus
+
+Commit the weekly review file to main.
 
 ---
 
-## Loss Categories
+## 5. Loss Classification System
+
+### 5.1 Categories
 
 | Category | When to use |
 |----------|------------|
 | `knowledge_gap` | Didn't know what to do vs. that tool or situation |
 | `execution` | Knew the answer but dropped the combo/punish |
 | `mental` | Tilted, rushed, or autopiloted after a bad round |
-| `conditioning` | Opponent adapted to your patterns and you didn't adjust |
+| `conditioning` | Opponent adapted to your patterns; you didn't re-adapt |
 
-## Loss Subcategories
+### 5.2 Subcategories
 
-`wake-up_option` | `neutral` | `punish_miss` | `oki` | `drive_gauge` | `general`
+| Subcategory | Description |
+|-------------|-------------|
+| `wake-up_option` | Lost to or missed a wake-up decision point |
+| `neutral` | Lost ground/momentum due to neutral spacing or poke error |
+| `punish_miss` | Missed a punish window on opponent's unsafe move |
+| `oki` | Post-knockdown offense or defense went wrong |
+| `drive_gauge` | Gauge management error (overextension, burnout) |
+| `general` | None of the above; add a descriptive note |
+
+**Derived metric**: `knowledge_gap` losses grouped by `opponent_character` produce the **matchup knowledge gap density** — which characters you are least prepared for.
 
 ---
 
-## Drill Mastery Stages
+## 6. Concept Library
+
+Each concept file contains:
+- Why it matters at 1600 MR vs. 1350 MR
+- Common patterns at the current level
+- What the improved version looks like
+- Study prompts
+- Linked drills
+
+Mastery tracked in `concepts/index.md` using the same 4 stages as drills.
+
+### 6.1 Fundamentals
+
+| File | Topic |
+|------|-------|
+| `drive-system.md` | Drive Rush, Drive Impact, burnout management, parry |
+| `neutral-footsies.md` | Spacing discipline, whiff punish, button economy |
+| `anti-air.md` | Reaction windows, correct tool by arc, conversion |
+| `mental-resilience.md` | Tilt recognition, between-match reset, protocol compliance |
+
+### 6.2 Ryu-Specific
+
+| File | Topic |
+|------|-------|
+| `normals-guide.md` | Key buttons by range and role |
+| `punish-combos.md` | Punish routes by drive level and position |
+| `oki-pressure.md` | Meaty setups, wake-up mix coverage |
+
+---
+
+## 7. Drill Library
+
+### 7.1 Mastery Stages
 
 | Stage | Meaning |
 |-------|---------|
-| `Not Started` | In the library, not yet attempted |
-| `In Drill` | Actively working it, inconsistent |
+| `Not Started` | In the library; not yet attempted |
+| `In Drill` | Actively working it; inconsistent |
 | `Consistent` | Lands reliably in training mode |
 | `Mastered` | Executes in match under pressure |
 
+Each drill file contains: goal, training mode setup, target reps, pass criteria, and common failure notes. Mastery is promoted only after criterion is met across multiple sessions — no single-session passes.
+
+### 7.2 Combo Drills
+
+| Drill ID | File | Goal |
+|----------|------|------|
+| `light-confirm` | `combo/light-confirm.md` | Close-range light starter confirm |
+| `drive-rush-bnb` | `combo/drive-rush-bnb.md` | Drive Rush conversion reliability |
+| `punish-optimal` | `combo/punish-optimal.md` | Punish route by resource state |
+
+### 7.3 Defense Drills
+
+| Drill ID | File | Goal |
+|----------|------|------|
+| `anti-air-reaction` | `defense/anti-air-reaction.md` | Anti-air response rate + tool selection |
+| `dp-bait` | `defense/dp-bait.md` | Reversal bait and punish |
+| `parry-timing` | `defense/parry-timing.md` | Controlled parry on known pressure strings |
+
+### 7.4 Neutral Drills
+
+| Drill ID | File | Goal |
+|----------|------|------|
+| `footsies-spacing` | `neutral/footsies-spacing.md` | Spacing discipline and whiff punish |
+
+### 7.5 Lab Log
+
+All drill attempts are logged in `drills/lab-log.md` with one entry per lab session:
+
+```markdown
+## YYYY-MM-DD
+
+- drill_id: drive-rush-bnb
+  reps: 50
+  stage_before: Not Started
+  stage_after: In Drill
+  success_rate: 0.56
+  notes: Timing drops at max range.
+```
+
+`drill_tracker.py` reads this log and produces a mastery timeline per drill in `artifacts/drill-mastery.json`.
+
 ---
 
-## Build Phases
+## 8. Matchup Notes
+
+`matchup-notes/` is the evolving character knowledge base built from replay analysis.
+
+Each file follows `_template.md`:
+- Primary threats (neutral, pressure, wake-up)
+- Evidence log (loss date + context entry)
+- Verified punishes
+- Identified defensive answers
+- Win conditions
+- Linked drills
+- Review trigger threshold
+
+**Workflow**: after any `knowledge_gap` loss, update or create the opponent's matchup note during the post-loss review. Files should be evidence-based — no assumptions without replay backing.
+
+**Review trigger**: revisit a matchup file when three new `knowledge_gap` losses vs. that character occur in one week, or when ranked win rate vs. that character drops below 45% over 20 games.
+
+Currently seeded:
+
+| File | Status |
+|------|--------|
+| `ryu.md` | Starter draft |
+| `_template.md` | Copy for new matchups |
+
+Suggested next matchup files to create as losses accumulate: `ken.md`, `luke.md`, `marisa.md`, `jp.md`.
+
+---
+
+## 9. Python Tooling
+
+All scripts are in `tools/`. Run from the repo root using the `.venv` Python.
+
+### 9.1 `session_close.py` — Hard Gate
+
+**Input**: path to a single session file via `--file`
+
+**Validates per `### Loss NN` block**:
+- `replay_watched` is `true`
+- `loss_category` is one of: `knowledge_gap`, `execution`, `mental`, `conditioning`
+- `loss_subcategory` is one of: `wake-up_option`, `neutral`, `punish_miss`, `oki`, `drive_gauge`, `general`
+- At least one actionable item (`drill`, `concept`, or `matchup_note`) is non-empty
+
+**Exit codes**: `0` = pass, `1` = validation failure with messages, `2` = file not found
+
+```bash
+python tools/session_close.py --file sessions/2026/04/2026-04-05.md
+```
+
+### 9.2 `parse_sessions.py`
+
+**Input**: all `sessions/**/*.md` files
+
+**Output**: `artifacts/sessions-summary.json`
+
+**Produces**:
+- Total sessions, losses, reviewed losses
+- Review compliance rate (% losses with `replay_watched: true`)
+- Loss category counts
+- Loss subcategory counts
+- Knowledge gap counts by opponent character
+- Weekly rollup (sessions, W-L per week)
+- Full session array with all loss entries
+
+```bash
+python tools/parse_sessions.py
+```
+
+### 9.3 `drill_tracker.py`
+
+**Input**: `drills/lab-log.md`
+
+**Output**: `artifacts/drill-mastery.json`
+
+**Produces**:
+- Latest mastery stage per drill ID
+- Full timeline of stage changes with dates, reps, and success rates
+
+```bash
+python tools/drill_tracker.py
+```
+
+### 9.4 `training_report.py`
+
+**Input**: `artifacts/sessions-summary.json` + `artifacts/drill-mastery.json` + Supabase DB (`sf.v_match_player_norm` filtered to `player_cfn = 'braventooth'`)
+
+**Output**: `artifacts/training-report.json`
+
+**Produces**:
+- Ranked winrate and MR snapshot from Supabase
+- Per-matchup win rate table
+- Total and ranked match counts
+- Full session metrics from `parse_sessions.py`
+- Full drill mastery state from `drill_tracker.py`
+- DB connection status (graceful degradation if DB is unavailable)
+
+**Requires** `DATABASE_URL` in `.env` pointing to the Supabase/Postgres instance from the `street_fighter` repo.
+
+```bash
+python tools/training_report.py
+```
+
+---
+
+## 10. Metrics Reference
+
+| Metric | Source | Script | Purpose |
+|--------|--------|--------|---------|
+| MR trend | Supabase `sf.v_match_player_norm` | `training_report.py` | Track progress toward 1600 |
+| Ranked win rate overall | Supabase | `training_report.py` | Baseline performance signal |
+| Win rate per matchup | Supabase | `training_report.py` | Identify structurally weak matchups |
+| Review compliance rate | Session logs | `parse_sessions.py` | Protocol habit adherence |
+| Loss category breakdown | Session logs | `parse_sessions.py` | Identify highest-leverage failure mode |
+| Loss subcategory breakdown | Session logs | `parse_sessions.py` | Narrow the failure mode further |
+| Matchup knowledge gap density | Session logs | `parse_sessions.py` | Which characters are least understood |
+| Weekly W-L | Session logs | `parse_sessions.py` | Volume and trend |
+| Drill mastery timeline | `lab-log.md` | `drill_tracker.py` | Lab progress over time |
+| Drill → match correlation | Session + drill | `training_report.py` | Did the drill reduce that loss subcategory? |
+
+---
+
+## 11. Build Phases
 
 | Phase | Focus | Status |
 |-------|-------|--------|
-| 1 | Protocol + templates + Python gate | ✅ Done |
-| 2 | Concept + drill library seeded | 🔄 In Progress |
-| 3 | `parse_sessions.py` + `session_close.py` functional | ✅ Done |
-| 4 | `training_report.py` Supabase integration | ✅ Done |
-| 5 | Community site publication | ⏳ Deferred |
+| **1** | Protocol, templates, session close hard gate | ✅ Complete |
+| **2** | Concept library seed (all 6 areas), drill library seed (7 drills) | ✅ Complete |
+| **3** | `parse_sessions.py` + `drill_tracker.py` functional | ✅ Complete |
+| **4** | `training_report.py` Supabase integration + graceful degradation | ✅ Complete |
+| **5** | CLI helper to scaffold a new session file by date | ⏳ Queued |
+| **6** | CI workflow — run gate + parse on every push | ⏳ Queued |
+| **7** | Community site publication under `personal_site` | ⏳ Deferred |
