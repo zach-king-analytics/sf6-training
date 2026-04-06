@@ -91,9 +91,14 @@ def main() -> int:
     sessions = _load_json(SESSIONS_SUMMARY)
     drills = _load_json(DRILL_MASTERY)
 
-    engine = create_engine(DATABASE_URL)
-    with engine.connect() as conn:
-        df = pd.read_sql(text(MATCH_QUERY), conn, params={"player_cfn": PLAYER_CFN})
+    df = pd.DataFrame()
+    db_error = None
+    try:
+        engine = create_engine(DATABASE_URL)
+        with engine.connect() as conn:
+            df = pd.read_sql(text(MATCH_QUERY), conn, params={"player_cfn": PLAYER_CFN})
+    except Exception as exc:
+        db_error = str(exc)
 
     supabase_metrics = _build_supabase_metrics(df)
 
@@ -102,11 +107,18 @@ def main() -> int:
         "supabase": supabase_metrics,
         "sessions": sessions,
         "drills": drills,
+        "meta": {
+            "database_connected": db_error is None,
+            "database_error": db_error,
+        },
     }
 
     OUT_FILE.write_text(json.dumps(report, indent=2, default=str), encoding="utf-8")
     print(f"Wrote {OUT_FILE}")
-    print(f"Ranked winrate: {supabase_metrics['ranked_winrate']:.1%}")
+    if db_error is None:
+        print(f"Ranked winrate: {supabase_metrics['ranked_winrate']:.1%}")
+    else:
+        print("Database connection unavailable. Wrote report with session and drill metrics only.")
     return 0
 
 

@@ -65,10 +65,13 @@ def build_summary() -> Dict[str, Any]:
 
         wins = int(post.metadata.get("wins", 0) or 0)
         losses_count = int(post.metadata.get("losses", len(losses)) or len(losses))
+        session_date = post.metadata.get("date")
+        if session_date is not None:
+            session_date = str(session_date)
 
         session_record = {
             "file": str(file.relative_to(ROOT)).replace("\\", "/"),
-            "date": post.metadata.get("date"),
+            "date": session_date,
             "player_cfn": post.metadata.get("player_cfn"),
             "character": post.metadata.get("character"),
             "session_type": post.metadata.get("session_type"),
