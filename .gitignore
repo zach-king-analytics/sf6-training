@@ -15,6 +15,9 @@ venv/
 # Build/output artifacts
 artifacts/
 
+# Gameplan history snapshots (tracked locally only)
+gameplan/history/
+
 # Editors
 .vscode/
 .idea/

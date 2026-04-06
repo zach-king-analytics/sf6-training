@@ -1,28 +1,50 @@
+---
+term: anti-air
+category: fundamentals
+stage: Not Started
+updated: 2026-04-04
+drills: [anti-air-reaction, dp-bait]
+related: [neutral-footsies, mental-resilience]
+---
+
 # Anti-Air
 
-## Why this matters for 1600 MR
+**Definition:** Intercepting a jump attempt before or during the airborne state to deny jump-in pressure and reclaim neutral position.
 
-Shutting down jumps stabilizes neutral and reduces scramble losses.
+---
 
-## 1300-1400 Pattern
+## Quick Reference
 
-- Late anti-air reactions
-- Wrong anti-air normal for jump arc
-- Inconsistent DP anti-air execution
+| Field | Value |
+|-------|-------|
+| Stage | Not Started |
+| Priority | High |
+| Drills | `anti-air-reaction`, `dp-bait` |
+| Related | `neutral-footsies`, `mental-resilience` |
 
-## 1600 Pattern
+## Recognition Cues
 
-- Early read and pre-commitment to anti-air lane
-- Correct anti-air tool by spacing
-- Reliable conversion after anti-air hit
+- Opponent is at jump-startup range and has been jumping freely
+- Your current neutral button would whiff the arc they are taking
+- You have been anti-airing late or trading in recent exchanges
 
-## Study Prompts
+## Core Tools
 
-- Which jump arcs beat my current anti-air choices?
-- Do I default to one anti-air option?
-- What conversion do I get after anti-air?
+| Tool | Arc | Range | Notes |
+|------|-----|-------|-------|
+| cr.HP | Steep / close | Point blank | Good confirm window |
+| st.HP | Mid arc | Close-mid | Horizontal reach |
+| HP DP (623HP) | Any arc | Full | Highest damage; punishable on block |
+| LP DP (623LP) | Early reads | Any | Safer in neutral; lower damage |
 
-## Linked Drills
+## Failure Modes
 
-- drills/defense/anti-air-reaction.md
-- drills/defense/dp-bait.md
+| Failure | Cause | Correction |
+|---------|-------|------------|
+| Trade / get hit | Reacting too late | Decide before jump, not during |
+| Wrong tool | Not tracking jump arc | Note arc tendency in loss entry |
+| No conversion | Anti-air hit but no follow-up | Add conversion to drill pass criteria |
+
+## Notes
+
+<!-- Session-specific observations go here -->

@@ -1,25 +1,23 @@
 # Concept Library
 
-Mastery stages:
+Each concept file is a dictionary entry: definition, recognition cues, tools/mechanics, and failure modes.
+Update the `stage` field in each file's frontmatter as mastery improves.
 
-- `Not Started`
-- `In Drill`
-- `Consistent`
-- `Mastered`
+Mastery stages: `Not Started` → `In Drill` → `Consistent` → `Mastered`
 
 ## Fundamentals
 
-| Concept | Status | Last Updated |
-|--------|--------|--------------|
-| Drive System | Not Started | 2026-04-04 |
-| Neutral / Footsies | Not Started | 2026-04-04 |
-| Anti-Air | Not Started | 2026-04-04 |
-| Mental Resilience | Not Started | 2026-04-04 |
+| Term | File | Stage | Updated |
+|------|------|-------|---------|
+| Drive System | `fundamentals/drive-system.md` | Not Started | 2026-04-04 |
+| Neutral / Footsies | `fundamentals/neutral-footsies.md` | Not Started | 2026-04-04 |
+| Anti-Air | `fundamentals/anti-air.md` | Not Started | 2026-04-04 |
+| Mental Resilience | `fundamentals/mental-resilience.md` | Not Started | 2026-04-04 |
 
 ## Ryu-Specific
 
-| Concept | Status | Last Updated |
-|--------|--------|--------------|
-| Normals Guide | Not Started | 2026-04-04 |
-| Punish Combos | Not Started | 2026-04-04 |
-| Oki Pressure | Not Started | 2026-04-04 |
+| Term | File | Stage | Updated |
+|------|------|-------|---------|
+| Normals Guide | `ryu-specific/normals-guide.md` | Not Started | 2026-04-04 |
+| Punish Combos | `ryu-specific/punish-combos.md` | Not Started | 2026-04-04 |
+| Oki Pressure | `ryu-specific/oki-pressure.md` | Not Started | 2026-04-04 |

@@ -1,22 +1,52 @@
+---
+term: oki-pressure
+category: ryu-specific
+stage: Not Started
+updated: 2026-04-04
+drills: [dp-bait, light-confirm]
+related: [punish-combos, normals-guide, mental-resilience]
+---
+
 # Ryu Oki Pressure
 
-## Goal
+**Definition:** Post-knockdown offense — the frame advantage state after landing a knockdown that lets Ryu threaten a meaty attack on the opponent's wake-up, forcing them to guess between several losing options.
 
-Improve post-knockdown decisions and reduce random wake-up interactions.
+---
 
-## Core Questions
+## Quick Reference
 
-- What is my meaty timing for common knockdowns?
-- Which option beats wake-up mash/reversal/backdash?
-- What is my safe pressure fallback if read is wrong?
+| Field | Value |
+|-------|-------|
+| Stage | Not Started |
+| Priority | Medium |
+| Drills | `dp-bait`, `light-confirm` |
+| Related | `punish-combos`, `normals-guide`, `mental-resilience` |
 
-## Common Errors
+## Core Questions to Answer in Lab
 
-- Overcommitting to one wake-up read
-- Not tracking opponent defensive habits
-- Losing momentum due to mistimed meaties
+- What is the meaty timing for common knockdown setups?
+- Which option covers wake-up mash?
+- Which option covers reversal DP?
+- Which option covers backdash?
+- What is the safe fallback if the read is wrong?
 
-## Linked Drills
+## Oki Options
 
-- drills/defense/dp-bait.md
-- drills/combo/light-confirm.md
+| Option | Beats | Loses to | Notes |
+|--------|-------|----------|-------|
+| Meaty cr.MK | Mash, backdash | Reversal DP | Good +frames on block |
+| Meaty cr.LP | Mash | Backdash, reversal DP | Tight window; combo starter |
+| Empty jump → throw | Block | Mash | Reads fear of jump-in |
+| DP bait (step back) | Reversal DP | Mash, backdash | Commit to punish after bait |
+
+## Failure Modes
+
+| Failure | Cause | Correction |
+|---------|-------|------------|
+| Overcommitting to one read | Not tracking habits | Note opponent's wake-up pattern in matchup file |
+| Mistimed meaty | Inconsistent setup timing | Drill timing from the specific knockdown used |
+| Losing momentum | Taking a reversal DP incorrectly | Default to bait option if no habit data available |
+
+## Notes
+
+<!-- Session-specific observations go here -->

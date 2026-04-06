@@ -19,23 +19,29 @@ A metric-driven skill development system for Street Fighter 6.
 5. [Loss Classification System](#5-loss-classification-system)
    - [Categories](#51-categories)
    - [Subcategories](#52-subcategories)
-6. [Concept Library](#6-concept-library)
-   - [Fundamentals](#61-fundamentals)
-   - [Ryu-Specific](#62-ryu-specific)
-7. [Drill Library](#7-drill-library)
-   - [Mastery Stages](#71-mastery-stages)
-   - [Combo Drills](#72-combo-drills)
-   - [Defense Drills](#73-defense-drills)
-   - [Neutral Drills](#74-neutral-drills)
-   - [Lab Log](#75-lab-log)
-8. [Matchup Notes](#8-matchup-notes)
-9. [Python Tooling](#9-python-tooling)
-   - [session_close.py](#91-session_closepy--hard-gate)
-   - [parse_sessions.py](#92-parse_sessionspy)
-   - [drill_tracker.py](#93-drill_trackerpy)
-   - [training_report.py](#94-training_reportpy)
-10. [Metrics Reference](#10-metrics-reference)
-11. [Build Phases](#11-build-phases)
+6. [Gameplan](#6-gameplan)
+   - [Structure](#61-structure)
+   - [Matchup Overrides](#62-matchup-overrides)
+   - [Versioning and Snapshots](#63-versioning-and-snapshots)
+7. [Concept Library](#7-concept-library)
+   - [Dictionary Format](#71-dictionary-format)
+   - [Fundamentals](#72-fundamentals)
+   - [Ryu-Specific](#73-ryu-specific)
+8. [Drill Library](#8-drill-library)
+   - [Mastery Stages](#81-mastery-stages)
+   - [Combo Drills](#82-combo-drills)
+   - [Defense Drills](#83-defense-drills)
+   - [Neutral Drills](#84-neutral-drills)
+   - [Lab Log](#85-lab-log)
+9. [Matchup Notes](#9-matchup-notes)
+10. [Python Tooling](#10-python-tooling)
+    - [session_close.py](#101-session_closepy--hard-gate)
+    - [parse_sessions.py](#102-parse_sessionspy)
+    - [drill_tracker.py](#103-drill_trackerpy)
+    - [training_report.py](#104-training_reportpy)
+    - [gameplan_snapshot.py](#105-gameplan_snapshotpy)
+11. [Metrics Reference](#11-metrics-reference)
+12. [Build Phases](#12-build-phases)
 
 ---
 
@@ -144,6 +150,12 @@ sf6-training/
 │       ├── punish-combos.md
 │       └── oki-pressure.md
 │
+├── gameplan/
+│   ├── current.md                     # live gameplan with Mermaid decision trees
+│   ├── _template.md                   # blank template for new versions
+│   └── history/                       # timestamped snapshots (gitignored)
+│       └── YYYY-MM-DD.md
+│
 ├── drills/
 │   ├── index.md                       # drill library + mastery table
 │   ├── lab-log.md                     # running log of every lab session
@@ -167,7 +179,8 @@ sf6-training/
 │   ├── session_close.py               # hard gate validator
 │   ├── parse_sessions.py              # session logs -> sessions-summary.json
 │   ├── drill_tracker.py               # lab-log.md -> drill-mastery.json
-│   └── training_report.py             # Supabase + sessions -> training-report.json
+│   ├── training_report.py             # Supabase + sessions -> training-report.json
+│   └── gameplan_snapshot.py           # snapshots current.md -> gameplan/history/
 │
 └── artifacts/                         # gitignored build outputs
     ├── sessions-summary.json
@@ -316,39 +329,85 @@ Commit the weekly review file to main.
 
 ---
 
-## 6. Concept Library
+## 6. Gameplan
 
-Each concept file contains:
-- Why it matters at 1600 MR vs. 1350 MR
-- Common patterns at the current level
-- What the improved version looks like
-- Study prompts
-- Linked drills
+`gameplan/current.md` is the canonical statement of how you currently play Ryu. It is versioned, updated deliberately, and snapshotted to `gameplan/history/` on each weekly review. It is **not** a drill or concept file — it is the meta-level decision framework you execute in matches.
 
-Mastery tracked in `concepts/index.md` using the same 4 stages as drills.
+### 6.1 Structure
 
-### 6.1 Fundamentals
+The gameplan document contains:
 
-| File | Topic |
-|------|-------|
-| `drive-system.md` | Drive Rush, Drive Impact, burnout management, parry |
-| `neutral-footsies.md` | Spacing discipline, whiff punish, button economy |
-| `anti-air.md` | Reaction windows, correct tool by arc, conversion |
-| `mental-resilience.md` | Tilt recognition, between-match reset, protocol compliance |
+| Section | Purpose |
+|---------|---------|
+| Win Conditions | The three paths to winning a match, in priority order |
+| Neutral Framework | Range map + Mermaid decision tree for neutral situations |
+| Anti-Air Branch | Decision tree for jump-in responses by arc |
+| Pressure Framework | Post-knockdown and blocked-string decision trees |
+| Defense Framework | Under-pressure and wake-up decision trees |
+| Drive Gauge Philosophy | Table of decisions by gauge state |
+| Non-Negotiables | Always-on rules that override matchup specifics |
+| Matchup Overrides | Per-character deviations from the base gameplan |
+| Adaptation Log | Running history of significant changes |
 
-### 6.2 Ryu-Specific
+### 6.2 Matchup Overrides
 
-| File | Topic |
-|------|-------|
-| `normals-guide.md` | Key buttons by range and role |
-| `punish-combos.md` | Punish routes by drive level and position |
-| `oki-pressure.md` | Meaty setups, wake-up mix coverage |
+When facing a character that requires a different neutral philosophy or pressure approach, add a row to the **Matchup Overrides** table in `current.md` and set `gameplan_override: <character>` in the session frontmatter. This flags the session as playing under modified rules.
+
+### 6.3 Versioning and Snapshots
+
+The gameplan is versioned with a simple integer. After editing `current.md` during a weekly review, run:
+
+```bash
+python tools/gameplan_snapshot.py [--date YYYY-MM-DD]
+```
+
+This:
+1. Copies the current gameplan to `gameplan/history/YYYY-MM-DD.md`
+2. Bumps the `version` field in `current.md`
+3. Updates the `updated` date
+
+`gameplan/history/` is gitignored to keep the main history clean; only `current.md` is committed. To reconstruct the evolution, review the **Adaptation Log** in `current.md` or check local history files.
 
 ---
 
-## 7. Drill Library
+## 7. Concept Library
 
-### 7.1 Mastery Stages
+Each concept file is a **dictionary entry** — a reference card structured around: definition, recognition cues, core tools/mechanics, and failure modes. The format is intentionally short and scannable, not educational prose. You should be able to open any concept file mid-session and get the answer in seconds.
+
+YAML frontmatter in each file tracks `stage`, `drills`, and `related` concepts.
+
+### 7.1 Dictionary Format
+
+Each file contains:
+- **Definition** — one sentence: what is this and why does it matter in context
+- **Quick Reference** — table of stage, priority, linked drills, related concepts
+- **Recognition Cues** — observable signals that this concept is in play right now
+- **Core Tools / Mechanics** — the actionable table (tools, arcs, routes, etc.)
+- **Failure Modes** — table of failure → cause → correction
+- **Notes** — running session-specific observations
+
+### 7.2 Fundamentals
+
+| Term | File | Stage | Updated |
+|------|------|-------|---------|
+| Drive System | `fundamentals/drive-system.md` | Not Started | 2026-04-04 |
+| Neutral / Footsies | `fundamentals/neutral-footsies.md` | Not Started | 2026-04-04 |
+| Anti-Air | `fundamentals/anti-air.md` | Not Started | 2026-04-04 |
+| Mental Resilience | `fundamentals/mental-resilience.md` | Not Started | 2026-04-04 |
+
+### 7.3 Ryu-Specific
+
+| Term | File | Stage | Updated |
+|------|------|-------|---------|
+| Normals Guide | `ryu-specific/normals-guide.md` | Not Started | 2026-04-04 |
+| Punish Combos | `ryu-specific/punish-combos.md` | Not Started | 2026-04-04 |
+| Oki Pressure | `ryu-specific/oki-pressure.md` | Not Started | 2026-04-04 |
+
+---
+
+## 8. Drill Library
+
+### 8.1 Mastery Stages
 
 | Stage | Meaning |
 |-------|---------|
@@ -359,7 +418,7 @@ Mastery tracked in `concepts/index.md` using the same 4 stages as drills.
 
 Each drill file contains: goal, training mode setup, target reps, pass criteria, and common failure notes. Mastery is promoted only after criterion is met across multiple sessions — no single-session passes.
 
-### 7.2 Combo Drills
+### 8.2 Combo Drills
 
 | Drill ID | File | Goal |
 |----------|------|------|
@@ -367,7 +426,7 @@ Each drill file contains: goal, training mode setup, target reps, pass criteria,
 | `drive-rush-bnb` | `combo/drive-rush-bnb.md` | Drive Rush conversion reliability |
 | `punish-optimal` | `combo/punish-optimal.md` | Punish route by resource state |
 
-### 7.3 Defense Drills
+### 8.3 Defense Drills
 
 | Drill ID | File | Goal |
 |----------|------|------|
@@ -375,13 +434,13 @@ Each drill file contains: goal, training mode setup, target reps, pass criteria,
 | `dp-bait` | `defense/dp-bait.md` | Reversal bait and punish |
 | `parry-timing` | `defense/parry-timing.md` | Controlled parry on known pressure strings |
 
-### 7.4 Neutral Drills
+### 8.4 Neutral Drills
 
 | Drill ID | File | Goal |
 |----------|------|------|
 | `footsies-spacing` | `neutral/footsies-spacing.md` | Spacing discipline and whiff punish |
 
-### 7.5 Lab Log
+### 8.5 Lab Log
 
 All drill attempts are logged in `drills/lab-log.md` with one entry per lab session:
 
@@ -400,7 +459,7 @@ All drill attempts are logged in `drills/lab-log.md` with one entry per lab sess
 
 ---
 
-## 8. Matchup Notes
+## 9. Matchup Notes
 
 `matchup-notes/` is the evolving character knowledge base built from replay analysis.
 
@@ -428,11 +487,11 @@ Suggested next matchup files to create as losses accumulate: `ken.md`, `luke.md`
 
 ---
 
-## 9. Python Tooling
+## 10. Python Tooling
 
 All scripts are in `tools/`. Run from the repo root using the `.venv` Python.
 
-### 9.1 `session_close.py` — Hard Gate
+### 10.1 `session_close.py` — Hard Gate
 
 **Input**: path to a single session file via `--file`
 
@@ -448,7 +507,7 @@ All scripts are in `tools/`. Run from the repo root using the `.venv` Python.
 python tools/session_close.py --file sessions/2026/04/2026-04-05.md
 ```
 
-### 9.2 `parse_sessions.py`
+### 10.2 `parse_sessions.py`
 
 **Input**: all `sessions/**/*.md` files
 
@@ -467,7 +526,7 @@ python tools/session_close.py --file sessions/2026/04/2026-04-05.md
 python tools/parse_sessions.py
 ```
 
-### 9.3 `drill_tracker.py`
+### 10.3 `drill_tracker.py`
 
 **Input**: `drills/lab-log.md`
 
@@ -481,7 +540,7 @@ python tools/parse_sessions.py
 python tools/drill_tracker.py
 ```
 
-### 9.4 `training_report.py`
+### 10.4 `training_report.py`
 
 **Input**: `artifacts/sessions-summary.json` + `artifacts/drill-mastery.json` + Supabase DB (`sf.v_match_player_norm` filtered to `player_cfn = 'braventooth'`)
 
@@ -501,9 +560,23 @@ python tools/drill_tracker.py
 python tools/training_report.py
 ```
 
+### 10.5 `gameplan_snapshot.py`
+
+**Input**: `gameplan/current.md`
+
+**Output**: `gameplan/history/YYYY-MM-DD.md` (snapshot copy)
+
+**Effect on `current.md`**: bumps the `version` integer and updates the `updated` date
+
+Run once per weekly review when you have made meaningful changes to the gameplan.
+
+```bash
+python tools/gameplan_snapshot.py [--date YYYY-MM-DD]
+```
+
 ---
 
-## 10. Metrics Reference
+## 11. Metrics Reference
 
 | Metric | Source | Script | Purpose |
 |--------|--------|--------|---------|
@@ -520,14 +593,15 @@ python tools/training_report.py
 
 ---
 
-## 11. Build Phases
+## 12. Build Phases
 
 | Phase | Focus | Status |
 |-------|-------|--------|
 | **1** | Protocol, templates, session close hard gate | ✅ Complete |
-| **2** | Concept library seed (all 6 areas), drill library seed (7 drills) | ✅ Complete |
+| **2** | Concept library seed (all 6 areas, dictionary format), drill library seed (7 drills) | ✅ Complete |
 | **3** | `parse_sessions.py` + `drill_tracker.py` functional | ✅ Complete |
 | **4** | `training_report.py` Supabase integration + graceful degradation | ✅ Complete |
-| **5** | CLI helper to scaffold a new session file by date | ⏳ Queued |
-| **6** | CI workflow — run gate + parse on every push | ⏳ Queued |
-| **7** | Community site publication under `personal_site` | ⏳ Deferred |
+| **5** | Gameplan system: `current.md`, `_template.md`, `gameplan_snapshot.py`, weekly review integration | ✅ Complete |
+| **6** | CLI helper to scaffold a new session file by date | ⏳ Queued |
+| **7** | CI workflow — run gate + parse on every push | ⏳ Queued |
+| **8** | Community site publication under `personal_site` | ⏳ Deferred |

@@ -7,9 +7,19 @@ start_mr: 1350
 end_mr: null
 focus: anti-air consistency
 energy_pre: medium
+gameplan_version: 1
+gameplan_override: none
 ---
 
 # Session Log
+
+## Gameplan Check
+
+> Before queuing: open `gameplan/current.md` and read the Non-Negotiables and the section most relevant to today's focus.
+> If playing a character with matchup overrides active, note the override below.
+
+- Override active: none
+- One non-negotiable to actively reinforce this session:
 
 ## Intent
 
