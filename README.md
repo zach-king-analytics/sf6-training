@@ -34,14 +34,15 @@ A metric-driven skill development system for Street Fighter 6.
    - [Neutral Drills](#84-neutral-drills)
    - [Lab Log](#85-lab-log)
 9. [Matchup Notes](#9-matchup-notes)
-10. [Python Tooling](#10-python-tooling)
-    - [session_close.py](#101-session_closepy--hard-gate)
-    - [parse_sessions.py](#102-parse_sessionspy)
-    - [drill_tracker.py](#103-drill_trackerpy)
-    - [training_report.py](#104-training_reportpy)
-    - [gameplan_snapshot.py](#105-gameplan_snapshotpy)
-11. [Metrics Reference](#11-metrics-reference)
-12. [Build Phases](#12-build-phases)
+10. [Combo Repository](#10-combo-repository)
+11. [Python Tooling](#11-python-tooling)
+    - [session_close.py](#111-session_closepy--hard-gate)
+    - [parse_sessions.py](#112-parse_sessionspy)
+    - [drill_tracker.py](#113-drill_trackerpy)
+    - [training_report.py](#114-training_reportpy)
+    - [gameplan_snapshot.py](#115-gameplan_snapshotpy)
+12. [Metrics Reference](#12-metrics-reference)
+13. [Build Phases](#13-build-phases)
 
 ---
 
@@ -174,6 +175,13 @@ sf6-training/
 │   ├── index.md                       # all matchups at a glance
 │   ├── _template.md                   # copy when starting a new matchup
 │   └── ryu.md                         # mirror matchup
+│
+├── combos/
+│   ├── index.md                       # master combo table + notation key
+│   ├── _entry_template.md             # copy when adding a new combo
+│   ├── confirms.md                    # hit-confirm strings (light, cr.MK, st.MP starters)
+│   ├── punish.md                      # punish routes by resource state (0–5 bars)
+│   └── oki-setups.md                  # post-knockdown meaty setups by position
 │
 ├── tools/
 │   ├── session_close.py               # hard gate validator
@@ -487,11 +495,53 @@ Suggested next matchup files to create as losses accumulate: `ken.md`, `luke.md`
 
 ---
 
-## 10. Python Tooling
+## 10. Combo Repository
+
+`combos/` is a personal reference library of Ryu's combo routes and oki setups, each with notation, resource cost, and an embedded video.
+
+> **Obsidian:** iframes render when Restricted Mode is off — Settings → Editor → disable Restricted Mode.
+> **MkDocs:** raw HTML renders by default via the `md_in_html` extension.
+
+### Structure
+
+| File | Contents |
+|------|----------|
+| `index.md` | Master table of all combos + notation key |
+| `confirms.md` | Hit-confirm strings (light starter, cr.MK DR BnB, st.MP check) |
+| `punish.md` | Punish routes by resource state (0, 2, 3, 5 bars) |
+| `oki-setups.md` | Meaty setups by knockdown source and position |
+| `_entry_template.md` | Copy when adding a new combo |
+
+### Adding a combo
+
+1. Copy `_entry_template.md` and paste it into the relevant category file
+2. Fill in notation, resource cost, damage, timing notes, and drop points
+3. Upload or find a YouTube clip demonstrating the combo
+4. Replace `VIDEO_ID` in the iframe `src` with the YouTube video ID (e.g. `dQw4w9WgXcQ`)
+5. Set `?start=XX` to the timestamp in seconds where the combo demo begins
+6. Update `combos/index.md` master table with the new entry
+
+### Video embed format
+
+```html
+<iframe
+  width="560"
+  height="315"
+  src="https://www.youtube.com/embed/VIDEO_ID?start=0"
+  title="Combo Name"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+  allowfullscreen>
+</iframe>
+```
+
+---
+
+## 11. Python Tooling
 
 All scripts are in `tools/`. Run from the repo root using the `.venv` Python.
 
-### 10.1 `session_close.py` — Hard Gate
+### 11.1 `session_close.py` — Hard Gate
 
 **Input**: path to a single session file via `--file`
 
@@ -507,7 +557,7 @@ All scripts are in `tools/`. Run from the repo root using the `.venv` Python.
 python tools/session_close.py --file sessions/2026/04/2026-04-05.md
 ```
 
-### 10.2 `parse_sessions.py`
+### 11.2 `parse_sessions.py`
 
 **Input**: all `sessions/**/*.md` files
 
@@ -526,7 +576,7 @@ python tools/session_close.py --file sessions/2026/04/2026-04-05.md
 python tools/parse_sessions.py
 ```
 
-### 10.3 `drill_tracker.py`
+### 11.3 `drill_tracker.py`
 
 **Input**: `drills/lab-log.md`
 
@@ -540,7 +590,7 @@ python tools/parse_sessions.py
 python tools/drill_tracker.py
 ```
 
-### 10.4 `training_report.py`
+### 11.4 `training_report.py`
 
 **Input**: `artifacts/sessions-summary.json` + `artifacts/drill-mastery.json` + Supabase DB (`sf.v_match_player_norm` filtered to `player_cfn = 'braventooth'`)
 
@@ -560,7 +610,7 @@ python tools/drill_tracker.py
 python tools/training_report.py
 ```
 
-### 10.5 `gameplan_snapshot.py`
+### 11.5 `gameplan_snapshot.py`
 
 **Input**: `gameplan/current.md`
 
@@ -576,7 +626,7 @@ python tools/gameplan_snapshot.py [--date YYYY-MM-DD]
 
 ---
 
-## 11. Metrics Reference
+## 12. Metrics Reference
 
 | Metric | Source | Script | Purpose |
 |--------|--------|--------|---------|
@@ -593,7 +643,7 @@ python tools/gameplan_snapshot.py [--date YYYY-MM-DD]
 
 ---
 
-## 12. Build Phases
+## 13. Build Phases
 
 | Phase | Focus | Status |
 |-------|-------|--------|
@@ -602,6 +652,7 @@ python tools/gameplan_snapshot.py [--date YYYY-MM-DD]
 | **3** | `parse_sessions.py` + `drill_tracker.py` functional | ✅ Complete |
 | **4** | `training_report.py` Supabase integration + graceful degradation | ✅ Complete |
 | **5** | Gameplan system: `current.md`, `_template.md`, `gameplan_snapshot.py`, weekly review integration | ✅ Complete |
-| **6** | CLI helper to scaffold a new session file by date | ⏳ Queued |
-| **7** | CI workflow — run gate + parse on every push | ⏳ Queued |
-| **8** | Community site publication under `personal_site` | ⏳ Deferred |
+| **6** | Combo repository: `combos/` with notation, video embeds, confirms / punish / oki files | ✅ Complete |
+| **7** | CLI helper to scaffold a new session file by date | ⏳ Queued |
+| **8** | CI workflow — run gate + parse on every push | ⏳ Queued |
+| **9** | Community site publication under `personal_site` | ⏳ Deferred |
