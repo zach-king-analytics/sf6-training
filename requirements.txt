@@ -4,3 +4,5 @@ python-dateutil==2.9.0.post0
 pandas==2.2.3
 SQLAlchemy==2.0.37
 psycopg2-binary==2.9.10
+python-dotenv==1.0.1
+httpx[http2]==0.27.2
